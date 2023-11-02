@@ -13,7 +13,7 @@ import json
 
 from evaluate import load
 
-from lm_eval.base import Task
+from bigcode_eval.base import Task
 
 _CITATION = """
 @inproceedings{yin2018learning,
@@ -34,11 +34,13 @@ class Conala(Task):
 
     DATASET_PATH = "neulab/conala"
 
-    def __init__(self):
+    def __init__(self, max_order=4, smooth=True):
         super().__init__(
             stop_words=["\n"],
             requires_execution=False,
         )
+        self.max_order = max_order
+        self.smooth = smooth
 
     def get_dataset(self):
         """Returns dataset for the task or an iterable of any object, that get_prompt can handle"""
@@ -47,7 +49,7 @@ class Conala(Task):
     def fewshot_examples(self):
         """Loads and returns the few-shot examples for the task if they exist."""
         with open(
-            "lm_eval/tasks/few_shot_examples/conala_few_shot_prompts.json", "r"
+            "bigcode_eval/tasks/few_shot_examples/conala_few_shot_prompts.json", "r"
         ) as file:
             examples = json.load(file)
         return examples
@@ -101,6 +103,6 @@ class Conala(Task):
         bleu = load("bleu")
         gens = [gen[0] for gen in generations]
         results = bleu.compute(
-            references=references, predictions=gens, max_order=4, smooth=True
+            references=references, predictions=gens, max_order=self.max_order, smooth=self.smooth
         )
         return results

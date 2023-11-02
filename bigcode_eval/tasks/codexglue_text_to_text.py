@@ -11,7 +11,7 @@ import re
 
 from evaluate import load
 
-from lm_eval.base import Task
+from bigcode_eval.base import Task
 
 _CITATION = """
 @article{CodeXGLUE,
@@ -40,8 +40,8 @@ def create_all_tasks():
 
 def create_task(translation_task):
     class CodexglueTextToTextTask(CodexglueTextToText):
-        def __init__(self):
-            super().__init__(translation_task)
+        def __init__(self, **kwargs):
+            super().__init__(translation_task, **kwargs)
 
     return CodexglueTextToTextTask
 
@@ -51,11 +51,13 @@ class CodexglueTextToText(Task):
     DATASET_PATH = "code_x_glue_tt_text_to_text"
     DATASET_NAME = None
 
-    def __init__(self, translation_task):
+    def __init__(self, translation_task, max_order=4, smooth=True):
         self.DATASET_NAME = translation_task
         stop_words = ["\n"]
         requires_execution = False
         super().__init__(stop_words, requires_execution)
+        self.max_order = max_order
+        self.smooth = smooth
 
     def get_dataset(self):
         """Returns dataset for the task or an iterable of any object, that get_prompt can handle"""
@@ -64,7 +66,7 @@ class CodexglueTextToText(Task):
     def fewshot_examples(self):
         """Loads and returns the few-shot examples for the task if they exist."""
         with open(
-            "lm_eval/tasks/few_shot_examples/codexglue_text_to_text_few_shot_prompts.json",
+            "bigcode_eval/tasks/few_shot_examples/codexglue_text_to_text_few_shot_prompts.json",
             "r",
         ) as file:
             examples = json.load(file)
@@ -117,6 +119,6 @@ class CodexglueTextToText(Task):
         bleu = load("bleu")
         gens = [gen[0] for gen in generations]
         results = bleu.compute(
-            references=references, predictions=gens, max_order=4, smooth=True
+            references=references, predictions=gens, max_order=self.max_order, smooth=self.smooth
         )
         return results
