@@ -215,6 +215,9 @@ def main():
     else:
         task_names = pattern_match(args.tasks.split(","), ALL_TASKS)
 
+    print(ALL_TASKS)
+    exit()
+
     accelerator = Accelerator()
     if accelerator.is_main_process:
         print(f"Selected Tasks: {task_names}")
@@ -283,6 +286,9 @@ def main():
             raise ValueError(
                 f"Non valid modeltype {args.modeltype}, choose from: causal, seq2seq"
             )
+        
+
+
 
         if args.peft_model:
             from peft import PeftModel  # dynamic import to avoid dependency on peft
