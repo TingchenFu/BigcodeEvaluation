@@ -16,6 +16,7 @@ from transformers import (
 from bigcode_eval.arguments import EvalArguments
 from bigcode_eval.evaluator import Evaluator
 from bigcode_eval.tasks import ALL_TASKS
+import os
 
 
 class MultiChoice:
@@ -49,7 +50,7 @@ def parse_args():
         help="AutoModel to use, it can be causal or seq2seq",
     )
     parser.add_argument(
-        "--peft_model",
+        "--peft_model_path",
         type=str,
         default=None,
         help="Adapter to the PEFT base model. Can be utilized for loading PEFT adapters such as a LoRA trained model. The --model parameter needs to be the base model.",
@@ -150,24 +151,29 @@ def parse_args():
     parser.add_argument(
         "--metric_output_path",
         type=str,
-        default="evaluation_results.json",
+        default=None,
         help="Path to save the results",
     )
-    parser.add_argument(
-        "--save_generations",
-        action="store_true",
-        help="Whether to save code generations",
-    )
+    # parser.add_argument(
+    #     "--save_generations",
+    #     action="store_true",
+    #     help="Whether to save code generations",
+    # )
     parser.add_argument(
         "--save_generations_path",
         type=str,
-        default="generations.json",
+        default=None,
         help="Path for saving the code generations",
     )
+    # parser.add_argument(
+    #     "--save_references",
+    #     action="store_true",
+    #     help="Whether to save reference solutions/tests",
+    # )
     parser.add_argument(
-        "--save_references",
-        action="store_true",
-        help="Whether to save reference solutions/tests",
+        "--save_reference_path",
+        type=str,
+        default=None,
     )
     parser.add_argument(
         "--prompt",
@@ -214,9 +220,6 @@ def main():
         task_names = ALL_TASKS
     else:
         task_names = pattern_match(args.tasks.split(","), ALL_TASKS)
-
-    print(ALL_TASKS)
-    exit()
 
     accelerator = Accelerator()
     if accelerator.is_main_process:
@@ -290,10 +293,10 @@ def main():
 
 
 
-        if args.peft_model:
+        if args.peft_model_path:
             from peft import PeftModel  # dynamic import to avoid dependency on peft
 
-            model = PeftModel.from_pretrained(model, args.peft_model)
+            model = PeftModel.from_pretrained(model, args.peft_model_path)
             print("Loaded PEFT model. Merging...")
             model.merge_and_unload()
             print("Merge complete.")
@@ -330,18 +333,22 @@ def main():
             print("Changing bos_token to <s>")
 
         evaluator = Evaluator(accelerator, model, tokenizer, args)
-
         for task in task_names:
             if args.generation_only:
                 if accelerator.is_main_process:
                     print("generation mode only")
                 generations, references = evaluator.generate_text(task)
                 if accelerator.is_main_process:
-                    with open(args.save_generations_path, "w") as fp:
-                        json.dump(generations, fp)
-                        print(f"generations were saved at {args.save_generations_path}")
-                    if args.save_references:
-                        with open("references.json", "w") as fp:
+                    if args.save_generations_path:
+                        if not os.path.exists(os.path.dirname(args.save_generations_path)):
+                            os.makedirs(os.path.dirname(args.save_generations_path))                    
+                        with open(args.save_generations_path, "w") as fp:
+                            json.dump(generations, fp)
+                            print(f"generations were saved at {args.save_generations_path}")
+                    if args.save_reference_path:
+                        if not os.path.exists(os.path.dirname(args.save_reference_path)):
+                            os.makedirs(os.path.dirname(args.save_reference_path))
+                        with open(args.save_reference_path, "w") as fp:
                             json.dump(references, fp)
                             print("references were saved")
             else:

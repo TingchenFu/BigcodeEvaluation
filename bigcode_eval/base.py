@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from warnings import warn
-
+import os
 from datasets import load_dataset
 
 
@@ -24,12 +24,19 @@ class Task(ABC):
         """
         self.stop_words = stop_words
         self.requires_execution = requires_execution
-        try:
-            self.dataset = load_dataset(path=self.DATASET_PATH, name=self.DATASET_NAME)
-        except Exception as e:
-            warn(
-                f"Loading the dataset failed with {str(e)}. This task will use a locally downloaded dataset, not from the HF hub."
-            )
+        #try:
+        if self.DATASET_PATH == 'openai_humaneval':
+            self.dataset = load_dataset('json', data_files={'test': os.path.join(os.getcwd(),'data',self.DATASET_PATH+'.json') })
+        elif self.DATASET_PATH == 'mbpp':
+            self.dataset = load_dataset('json',data_files={'test': os.path.join(os.getcwd(),'data',self.DATASET_PATH+'_test.json') })
+        else:
+            print(self.DATASET_PATH)
+            print(self.DATASET_NAME)
+            raise NotImplementedError
+        # except Exception as e:
+        #     warn(
+        #         f"Loading the dataset failed with {str(e)}. This task will use a locally downloaded dataset, not from the HF hub."
+        #     )
 
     @abstractmethod
     def get_dataset(self):

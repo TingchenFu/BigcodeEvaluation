@@ -77,14 +77,18 @@ class Evaluator:
 
         if self.accelerator.is_main_process:
             if not self.args.load_generations_path:
-                if self.args.save_generations:
+                if self.args.save_generations_path:
+                    if not os.path.exists(os.path.dirname(self.args.save_generations_path)):
+                        os.makedirs(os.path.dirname(self.args.save_generations_path))
                     with open(self.args.save_generations_path, "w") as fp:
                         json.dump(generations, fp)
                         print(
                             f"generations were saved at {self.args.save_generations_path}"
                         )
-                if self.args.save_references:
-                    with open("references.json", "w") as fp:
+                if self.args.save_reference_path:
+                    if not os.path.exists(os.path.dirname(self.args.save_reference_path)):
+                        os.makedirs(os.path.dirname(self.args.save_reference_path))
+                    with open(self.args.save_reference_path , "w") as fp:
                         json.dump(references, fp)
                         print("references were saved at references.json")
 
